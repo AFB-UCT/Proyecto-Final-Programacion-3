@@ -1,1 +1,0 @@
-# Archivo Principal con la interfaz grafica

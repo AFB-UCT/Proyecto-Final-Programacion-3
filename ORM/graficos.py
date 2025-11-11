@@ -1,1 +1,0 @@
-# Funciones para Definir los graficos (Matplotlib)
