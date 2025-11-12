@@ -2,3 +2,5 @@ __pycache__/
 env/
 orm.pptx
 ~$orm.pptx
+borrador
+models_test.py

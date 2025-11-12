@@ -1,6 +1,14 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, inspect
+from sqlalchemy import Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from database import Base
+
+menus_ingredientes = Table('menus_ingredientes', Base.metadata, 
+                        Column('ingrediente_id', Integer, ForeignKey('ingredientes.id'), primary_key=True),
+                        Column('menu_id', Integer, ForeignKey('menus.id'), primary_key=True))
+
+pedido_menu = Table('pedido_menu', Base.metadata,
+                    Column('pedido_id', Integer, ForeignKey('pedido.id'), primary_key=True),
+                    Column(('menu_id'), Integer, ForeignKey('menus.id'), primary_key=True))
 
 class Cliente(Base):
     __tablename__ = "cliente"
@@ -15,10 +23,9 @@ class Ingredientes(Base):
     
     id = Column(Integer(), primary_key=True)
     nombre = Column(String(50), nullable=False, unique=True)
-    cantidad = Column(Integer(), nullable=False, unique=True)
+    cantidad = Column(Integer(), nullable=False)
     
-    def __str__(self):
-        return self.nombre
+    menus = relationship("Menus", secondary=menus_ingredientes, back_populates="ingredientes")
     
 class Menus(Base):
     __tablename__ = "menus"
@@ -26,8 +33,8 @@ class Menus(Base):
     id = Column(Integer(), primary_key=True)
     nombre = Column(String(50), nullable=False, unique=True)
     
-    def __str__(self):
-        return self.nombre
+    ingredientes=relationship("Ingredientes", secondary=menus_ingredientes, back_populates="menus")
+    pedidos=relationship("Pedido", secondary=pedido_menu, back_populates="menus")
     
     
 class Pedido(Base):
@@ -40,4 +47,7 @@ class Pedido(Base):
 
     cliente_id = Column(Integer, ForeignKey('cliente.id'))
     cliente = relationship("Cliente", back_populates="pedidos")
+
+    menus = relationship("Menus", secondary=pedido_menu, back_populates="pedidos")
+    
     
