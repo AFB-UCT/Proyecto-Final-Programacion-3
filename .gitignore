@@ -2,4 +2,5 @@ __pycache__/
 env/
 orm.pptx
 ~$orm.pptx
-PixelFood.db
+borrador
+models_test.py
