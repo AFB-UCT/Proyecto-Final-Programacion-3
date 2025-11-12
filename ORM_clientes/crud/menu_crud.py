@@ -1,3 +1,10 @@
+import sys
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
 from sqlalchemy.orm import Session
 
 from models import Menus
@@ -35,3 +42,6 @@ def actualizar_menu(db: Session, menu_id: int, nombre: str):
         db.refresh(menu)
     
     return menu
+
+if __name__ == "__main__":
+    print("menu_crud")

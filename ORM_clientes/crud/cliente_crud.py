@@ -1,3 +1,11 @@
+import sys
+import os
+from sqlalchemy.orm import Session
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
 from sqlalchemy.orm import Session
 
 from models import Cliente
@@ -42,3 +50,6 @@ def actualizar_cliente(db: Session, cliente_id:int, nombre:str):
 
         db.refresh(cliente)
     return cliente
+
+if __name__ == "__main__":
+    print("cliente_crud")

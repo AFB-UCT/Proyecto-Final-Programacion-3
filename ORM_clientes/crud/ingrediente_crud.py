@@ -1,5 +1,11 @@
-from sqlalchemy.orm import Session
+import sys
+import os
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
+from sqlalchemy.orm import Session
 from models import Ingredientes
 
 def crear_ingrediente(db: Session, nombre: str, cantidad: int):
@@ -42,3 +48,6 @@ def actualizar_ingrediente(db: Session, ingrediente_id: int, nombre: str = None,
         db.refresh(ingrediente)
     
     return ingrediente
+
+if __name__ == "__main__":
+    print("ingrediente_crud")
