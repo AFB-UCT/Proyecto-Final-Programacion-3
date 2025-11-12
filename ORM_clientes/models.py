@@ -1,85 +1,53 @@
-from sqlalchemy import Table, Column, Integer, String, DateTime, Float, Boolean, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy.orm import relationship
+from database import Base
 
-Base = declarative_base()
+menus_ingredientes = Table('menus_ingredientes', Base.metadata, 
+                        Column('ingrediente_id', Integer, ForeignKey('ingredientes.id'), primary_key=True),
+                        Column('menu_id', Integer, ForeignKey('menus.id'), primary_key=True))
 
-menu_ingrediente_table = Table(
-    "menu_ingrediente",
-    Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("menu_id", Integer, ForeignKey("menus.id", ondelete="CASCADE"), nullable=False),
-    Column("ingrediente_id", Integer, ForeignKey("ingredientes.id", ondelete="RESTRICT"), nullable=False),
-    Column("cantidad", Float, nullable=False), 
-    UniqueConstraint("menu_id", "ingrediente_id", name="uix_menu_ingrediente")
-)
-
-
-pedido_menu_table = Table(
-    "pedido_menu",
-    Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("pedido_id", Integer, ForeignKey("pedidos.id", ondelete="CASCADE"), nullable=False),
-    Column("menu_id", Integer, ForeignKey("menus.id", ondelete="RESTRICT"), nullable=False),
-    Column("cantidad", Integer, nullable=False, default=1),
-    UniqueConstraint("pedido_id", "menu_id", name="uix_pedido_menu")
-)
-
+pedido_menu = Table('pedido_menu', Base.metadata,
+                    Column('pedido_id', Integer, ForeignKey('pedido.id'), primary_key=True),
+                    Column(('menu_id'), Integer, ForeignKey('menus.id'), primary_key=True))
 
 class Cliente(Base):
-    __tablename__ = "clientes"
+    __tablename__ = "cliente"
+    
+    id = Column(Integer(), primary_key=True)
+    nombre = Column(String(50), nullable=False)
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String(120), nullable=False)
-
-
-    pedidos = relationship("Pedido", back_populates="cliente", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"<Cliente id={self.id} nombre={self.nombre} email={self.email}>"
-
+    pedidos=relationship("Pedido", back_populates="cliente")
 
 class Ingredientes(Base):
     __tablename__ = "ingredientes"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String(150), nullable=False, unique=True, index=True)
-    cantidad = Column(Float, nullable=False, default=0.0)
-    unidad = Column(String(30), nullable=True)
-
-
-    menus = relationship("Menu", secondary=menu_ingrediente_table, back_populates="ingredientes")
-
-    def __repr__(self):
-        unit = self.unidad or ""
-        return f"<Ingredientes id={self.id} nombre={self.nombre} cantidad={self.cantidad}{unit}>"
-
-
-class Menu(Base):
+    
+    id = Column(Integer(), primary_key=True)
+    nombre = Column(String(50), nullable=False, unique=True)
+    cantidad = Column(Integer(), nullable=False)
+    
+    menus = relationship("Menus", secondary=menus_ingredientes, back_populates="ingredientes")
+    
+class Menus(Base):
     __tablename__ = "menus"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String(150), nullable=False, unique=True, index=True)
-    descripcion = Column(String(500), nullable=True)
-    precio = Column(Float, nullable=False, default=0.0)
-
-
-    ingredientes = relationship("Ingredientes", secondary=menu_ingrediente_table, back_populates="menus")
-    pedidos = relationship("Pedido", secondary=pedido_menu_table, back_populates="menus")
-
-    def __repr__(self):
-        return f"<Menu id={self.id} nombre={self.nombre} precio={self.precio}>"
-
-
+    
+    id = Column(Integer(), primary_key=True)
+    nombre = Column(String(50), nullable=False, unique=True)
+    
+    ingredientes=relationship("Ingredientes", secondary=menus_ingredientes, back_populates="menus")
+    pedidos=relationship("Pedido", secondary=pedido_menu, back_populates="menus")
+    
+    
 class Pedido(Base):
-    __tablename__ = "pedidos"
+    __tablename__ = "pedido"
+    
+    id = Column(Integer(), primary_key=True)
+    nombre = Column(String(50), nullable=False)
+    cantidad = Column(Integer(), nullable=False)
+    precio = Column(Integer(), nullable=False)
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    cliente_id = Column(Integer, ForeignKey("clientes.id", ondelete="RESTRICT"), nullable=False)
-    total = Column(Float, nullable=False, default=0.0)
-
-
+    cliente_id = Column(Integer, ForeignKey('cliente.id'))
     cliente = relationship("Cliente", back_populates="pedidos")
-    menus = relationship("Menu", secondary=pedido_menu_table, back_populates="pedidos")
 
-    def __repr__(self):
-        return f"<Pedido id={self.id} cliente_id={self.cliente_id} total={self.total}>"
+    menus = relationship("Menus", secondary=pedido_menu, back_populates="pedidos")
+    
+    
