@@ -1,51 +1,35 @@
-# cargar_ingredientes_csv.py
-import csv
-from sqlalchemy.exc import IntegrityError
-from database import Session
-from models import Ingredientes
+import pandas as pd
+import sqlite3
 
-def cargar_ingredientes_desde_csv(ruta_csv: str):
-    """
-    Lee un archivo CSV con columnas: nombre, cantidad, unidad
-    y carga cada ingrediente en la base de datos.
-    """
-    ingredientes_insertados = 0
-    ingredientes_omitidos = 0
+# Lee el archivo CSV
+df = pd.read_csv('ingredientes_menu.csv')
 
-    with Session() as db:
-        with open(ruta_csv, newline='', encoding='utf-8') as archivo_csv:
-            lector = csv.DictReader(archivo_csv)
+# Verifica si existen valores negativos en los ingredientes
+numeric_cols = df.select_dtypes(include=['number']).columns
 
-            for fila in lector:
-                nombre = fila.get("nombre", "").strip()
-                unidad = fila.get("unidad", "").strip() or None
-                cantidad = float(fila.get("cantidad", 0))
+# Filtrar filas con valores negativos
+negativos = df[(df[numeric_cols] < 0).any(axis=1)]
 
-
-                if not nombre:
-                    print(f"Fila sin nombre: {fila}")
-                    continue
-
-
-                existente = db.query(Ingredientes).filter_by(nombre=nombre).first()
-                if existente:
-                    print(f"⏭Ingrediente '{nombre}' ya existe, se omite.")
-                    ingredientes_omitidos += 1
-                    continue
-
-                nuevo = Ingredientes(nombre=nombre, cantidad=cantidad, unidad=unidad)
-                db.add(nuevo)
-                ingredientes_insertados += 1
-
-        try:
-            db.commit()
-            print(f"Se insertaron {ingredientes_insertados} ingredientes nuevos.")
-            print(f"Se omitieron {ingredientes_omitidos} ya existentes.")
-        except IntegrityError as e:
-            db.rollback()
-            print("Error de integridad:", e)
-
-if __name__ == "__main__":
-    ruta = "ingredientes_menu.csv"
-    cargar_ingredientes_desde_csv(ruta)
+if not negativos.empty:
+    print("Valores negativos encontrados:")
+    print(negativos)
+    # Eliminar las filas con valores negativos antes de guardar
+    df = df[(df[numeric_cols] >= 0).all(axis=1)]
+else:
     print("Ingredientes cargados")
+
+# Conectar a la base de datos
+conn = sqlite3.connect("PixelFood.db")
+
+# Guardar los datos limpios en la tabla 'ingredientes'
+df.to_sql('ingredientes', conn, if_exists='replace', index=False)
+
+conn.commit()
+
+conn.close()
+
+
+
+
+
+
