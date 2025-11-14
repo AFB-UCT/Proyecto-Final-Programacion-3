@@ -28,7 +28,7 @@ def cargar_ingredientes_desde_csv(ruta_csv: str):
                 continue
             unidad = (fila.get("unidad") or "").strip() or None
 
-            ing = sumar_stock_por_nombre(nombre, cantidad)
+            ing = sumar_stock_por_nombre(nombre, cantidad, unidad)
 
             print(f"Procesado: {nombre} +{cantidad} {unidad or ''}")
             insertados += 1

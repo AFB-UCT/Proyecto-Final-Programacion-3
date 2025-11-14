@@ -102,7 +102,7 @@ def eliminar_ingrediente(id_: int):
 # ---------------------------------------------------------
 #   SUMAR STOCK POR NOMBRE
 # ---------------------------------------------------------
-def sumar_stock_por_nombre(nombre: str, cantidad: float):
+def sumar_stock_por_nombre(nombre: str, cantidad: float, unidad: str = None):
     nombre = (nombre or "").strip()
     if not nombre:
         raise ValueError("Nombre vacío.")
@@ -117,15 +117,23 @@ def sumar_stock_por_nombre(nombre: str, cantidad: float):
         ing = db.query(Ingredientes).filter(Ingredientes.nombre == nombre).first()
 
         if ing:
-            # Sumar stock
             ing.cantidad += cantidad
-            db.commit()      
+
+            # Si no tiene unidad y ahora viene una, la asignamos
+            if unidad:
+                ing.unidad = unidad
+
+            db.commit()
             db.refresh(ing)
             return ing
 
-        # Crear nuevo ingrediente si no existe
-        nuevo = Ingredientes(nombre=nombre, cantidad=cantidad)
+        # Crear nuevo ingrediente con unidad
+        nuevo = Ingredientes(
+            nombre=nombre,
+            cantidad=cantidad,
+            unidad=unidad
+        )
         db.add(nuevo)
-        db.commit()           
+        db.commit()
         db.refresh(nuevo)
         return nuevo
