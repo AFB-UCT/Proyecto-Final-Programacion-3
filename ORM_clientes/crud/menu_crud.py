@@ -6,11 +6,14 @@ if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 from sqlalchemy.orm import Session
-
 from models import Menus
 
-def crear_menu(db: Session, nombre: str):
-    nuevo_menu = Menus(nombre=nombre)
+def crear_menu(db: Session, nombre: str, descripcion: str, precio: float):
+    nuevo_menu = Menus(
+        nombre=nombre,
+        descripcion=descripcion,
+        precio=precio
+    )
     
     db.add(nuevo_menu)
     db.commit()
@@ -33,15 +36,21 @@ def eliminar_menu(db: Session, menu_id: int):
     
     return menu
 
-def actualizar_menu(db: Session, menu_id: int, nombre: str):
+def actualizar_menu(db: Session, menu_id: int, nombre: str = None, descripcion: str = None, precio: float = None):
     menu = db.query(Menus).filter(Menus.id == menu_id).first()
     
     if menu:
-        menu.nombre = nombre
+        if nombre is not None:
+            menu.nombre = nombre
+        if descripcion is not None:
+            menu.descripcion = descripcion
+        if precio is not None:
+            menu.precio = precio
+        
         db.commit()
         db.refresh(menu)
     
     return menu
 
 if __name__ == "__main__":
-    print("menu_crud")
+    print("menu_crud actualizado")

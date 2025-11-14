@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 
 from models import Cliente
 
-def crear_cliente(db: Session, nombre: str):
+def crear_cliente(db: Session, nombre: str, email: str):
 
-    nuevo_cliente = Cliente(nombre=nombre)
+    nuevo_cliente = Cliente(nombre=nombre, email=email)
+
 
     db.add(nuevo_cliente)
 
@@ -39,12 +40,14 @@ def eliminar_cliente(db: Session, cliente_id:int):
 
     return cliente
 
-def actualizar_cliente(db: Session, cliente_id:int, nombre:str):
+def actualizar_cliente(db: Session, cliente_id:int, nombre:str, email: str):
 
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
     if cliente:
         cliente.nombre = nombre
+        
+        cliente.email = email
 
         db.commit()
 

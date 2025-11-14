@@ -1,35 +1,40 @@
-import pandas as pd
-import sqlite3
+# cargar_ingredientes_csv.py
 
-# Lee el archivo CSV
-df = pd.read_csv('ingredientes_menu.csv')
+import csv
+import os
+from crud.ingrediente_crud import sumar_stock_por_nombre
 
-# Verifica si existen valores negativos en los ingredientes
-numeric_cols = df.select_dtypes(include=['number']).columns
+def cargar_ingredientes_desde_csv(ruta_csv: str):
+    if not os.path.exists(ruta_csv):
+        raise FileNotFoundError(f"No existe el archivo: {ruta_csv}")
 
-# Filtrar filas con valores negativos
-negativos = df[(df[numeric_cols] < 0).any(axis=1)]
+    insertados = 0
+    actualizados = 0
+    omitidos = 0
 
-if not negativos.empty:
-    print("Valores negativos encontrados:")
-    print(negativos)
-    # Eliminar las filas con valores negativos antes de guardar
-    df = df[(df[numeric_cols] >= 0).all(axis=1)]
-else:
-    print("Ingredientes cargados")
+    with open(ruta_csv, newline="", encoding="utf-8-sig") as f:
+        lector = csv.DictReader(f)
+        for fila in lector:
+            nombre = (fila.get("nombre") or "").strip()
+            if not nombre:
+                print("Fila sin nombre -> omitir:", fila)
+                omitidos += 1
+                continue
+            try:
+                cantidad = float((fila.get("cantidad") or 0))
+            except (ValueError, TypeError):
+                print("Cantidad inválida -> omitir:", fila)
+                omitidos += 1
+                continue
+            unidad = (fila.get("unidad") or "").strip() or None
 
-# Conectar a la base de datos
-conn = sqlite3.connect("PixelFood.db")
+            ing = sumar_stock_por_nombre(nombre, cantidad)
 
-# Guardar los datos limpios en la tabla 'ingredientes'
-df.to_sql('ingredientes', conn, if_exists='replace', index=False)
+            print(f"Procesado: {nombre} +{cantidad} {unidad or ''}")
+            insertados += 1
 
-conn.commit()
+    print(f"Proceso finalizado. Filas procesadas: {insertados}. Omitidos: {omitidos}.")
 
-conn.close()
-
-
-
-
-
-
+if __name__ == "__main__":
+    ruta = "ingredientes_menu.csv"
+    cargar_ingredientes_desde_csv(ruta)

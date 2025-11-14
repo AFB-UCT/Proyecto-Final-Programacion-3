@@ -32,20 +32,20 @@ def test_completo():
     print("\n2. 📥 POBLANDO BASE DE DATOS...")
     
     # Crear clientes
-    cliente1 = Cliente(nombre="Ana García")
-    cliente2 = Cliente(nombre="Carlos López") 
-    cliente3 = Cliente(nombre="María Torres")
+    cliente1 = Cliente(nombre="Ana García", email="ana123@outlook.com")
+    cliente2 = Cliente(nombre="Carlos López", email="carlos@gmail.com") 
+    cliente3 = Cliente(nombre="María Torres", email="maria000@gmail.com")
     session.add_all([cliente1, cliente2, cliente3])
     
     # Crear ingredientes
     ingredientes = [
-        Ingredientes(nombre="Pan", cantidad=100),
-        Ingredientes(nombre="Carne", cantidad=50),
-        Ingredientes(nombre="Queso", cantidad=30),
-        Ingredientes(nombre="Lechuga", cantidad=40),
-        Ingredientes(nombre="Tomate", cantidad=25),
-        Ingredientes(nombre="Cebolla", cantidad=35),
-        Ingredientes(nombre="Salsa", cantidad=60)
+        Ingredientes(nombre="Pan", unidad="unidad", cantidad=100),
+        Ingredientes(nombre="Carne", unidad="kg", cantidad=50),
+        Ingredientes(nombre="Queso", unidad="kg" ,cantidad=30),
+        Ingredientes(nombre="Lechuga", unidad="kg" ,cantidad=40),
+        Ingredientes(nombre="Tomate", unidad="kg", cantidad=25),
+        Ingredientes(nombre="Cebolla", unidad="kg", cantidad=35),
+        Ingredientes(nombre="Salsa", unidad="unidades", cantidad=60)
     ]
     session.add_all(ingredientes)
     

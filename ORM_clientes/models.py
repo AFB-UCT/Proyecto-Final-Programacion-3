@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, Table, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
 
 menus_ingredientes = Table('menus_ingredientes', Base.metadata, 
@@ -15,6 +16,7 @@ class Cliente(Base):
     
     id = Column(Integer(), primary_key=True)
     nombre = Column(String(50), nullable=False)
+    email = Column(String(50), nullable=False)
 
     pedidos=relationship("Pedido", back_populates="cliente")
 
@@ -23,7 +25,8 @@ class Ingredientes(Base):
     
     id = Column(Integer(), primary_key=True)
     nombre = Column(String(50), nullable=False, unique=True)
-    cantidad = Column(Integer(), nullable=False)
+    unidad = Column(String(50), nullable=True)
+    cantidad = Column(Integer(), nullable=True)
     
     menus = relationship("Menus", secondary=menus_ingredientes, back_populates="ingredientes")
     
@@ -31,7 +34,9 @@ class Menus(Base):
     __tablename__ = "menus"
     
     id = Column(Integer(), primary_key=True)
-    nombre = Column(String(50), nullable=False, unique=True)
+    nombre = Column(String(50), nullable=False)
+    descripcion = Column(String(70), nullable=True)
+    precio = Column(Float(), nullable=True)
     
     ingredientes=relationship("Ingredientes", secondary=menus_ingredientes, back_populates="menus")
     pedidos=relationship("Pedido", secondary=pedido_menu, back_populates="menus")
@@ -43,7 +48,8 @@ class Pedido(Base):
     id = Column(Integer(), primary_key=True)
     nombre = Column(String(50), nullable=False)
     cantidad = Column(Integer(), nullable=False)
-    precio = Column(Integer(), nullable=False)
+    precio = Column(Integer(), nullable=True)
+    fecha = Column(DateTime, default=datetime.utcnow)
 
     cliente_id = Column(Integer, ForeignKey('cliente.id'))
     cliente = relationship("Cliente", back_populates="pedidos")

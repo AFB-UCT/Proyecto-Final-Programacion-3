@@ -5,49 +5,127 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from sqlalchemy.orm import Session
+from database import get_session
 from models import Ingredientes
 
-def crear_ingrediente(db: Session, nombre: str, cantidad: int):
-    nuevo_ingrediente = Ingredientes(
-        nombre=nombre,
-        cantidad=cantidad
-    )
-    
-    db.add(nuevo_ingrediente)
-    db.commit()
-    db.refresh(nuevo_ingrediente)
-    
-    return nuevo_ingrediente
+# ---------------------------------------------------------
+#   CREAR INGREDIENTE
+# ---------------------------------------------------------
+def crear_ingrediente(nombre: str, cantidad: float = 0.0, unidad: str = None):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        raise ValueError("Nombre de ingrediente vacío.")
 
-def obtener_ingrediente(db: Session, ingrediente_id: int):
-    return db.query(Ingredientes).filter(Ingredientes.id == ingrediente_id).first()
+    # Normalizar cantidad
+    try:
+        cantidad = float(cantidad or 0)
+    except (ValueError, TypeError):
+        raise ValueError("Cantidad inválida.")
 
-def obtener_ingredientes(db: Session):
-    return db.query(Ingredientes).all()
+    if cantidad < 0:
+        raise ValueError("Cantidad no puede ser negativa.")
 
-def eliminar_ingrediente(db: Session, ingrediente_id: int):
-    ingrediente = db.query(Ingredientes).filter(Ingredientes.id == ingrediente_id).first()
-    
-    if ingrediente:
-        db.delete(ingrediente)
-        db.commit()
-    
-    return ingrediente
+    with get_session() as db:
+        existente = db.query(Ingredientes).filter(Ingredientes.nombre == nombre).first()
+        if existente:
+            raise ValueError("Ingrediente ya existe. Usa actualizar_ingrediente para modificar.")
 
-def actualizar_ingrediente(db: Session, ingrediente_id: int, nombre: str = None, cantidad: int = None):
-    ingrediente = db.query(Ingredientes).filter(Ingredientes.id == ingrediente_id).first()
-    
-    if ingrediente:
-        if nombre is not None:
-            ingrediente.nombre = nombre
+        nuevo = Ingredientes(nombre=nombre, cantidad=cantidad, unidad=unidad)
+        db.add(nuevo)
+        db.commit()       # ← NECESARIO
+        db.refresh(nuevo) # ← ahora sí funciona
+
+        return nuevo
+
+
+# ---------------------------------------------------------
+#   OBTENER INGREDIENTE POR ID
+# ---------------------------------------------------------
+def obtener_ingrediente(id_: int):
+    with get_session() as db:
+        return db.query(Ingredientes).filter(Ingredientes.id == id_).first()
+
+
+# ---------------------------------------------------------
+#   BUSCAR INGREDIENTE POR NOMBRE
+# ---------------------------------------------------------
+def buscar_ingrediente_por_nombre(nombre: str):
+    with get_session() as db:
+        return db.query(Ingredientes).filter(Ingredientes.nombre == nombre).first()
+
+
+# ---------------------------------------------------------
+#   ACTUALIZAR INGREDIENTE
+# ---------------------------------------------------------
+def actualizar_ingrediente(id_: int, nombre: str = None, unidad: str = None, cantidad: float = None):
+    with get_session() as db:
+        ing = db.query(Ingredientes).filter(Ingredientes.id == id_).first()
+        if not ing:
+            raise ValueError("Ingrediente no encontrado.")
+
+        if nombre:
+            ing.nombre = nombre.strip()
+
         if cantidad is not None:
-            ingrediente.cantidad = cantidad
-            
-        db.commit()
-        db.refresh(ingrediente)
-    
-    return ingrediente
+            try:
+                cantidad = float(cantidad)
+            except (ValueError, TypeError):
+                raise ValueError("Cantidad inválida.")
+            if cantidad < 0:
+                raise ValueError("Cantidad no puede ser negativa.")
+            ing.cantidad = cantidad
 
-if __name__ == "__main__":
-    print("ingrediente_crud")
+        if unidad is not None:
+            ing.unidad = unidad
+
+        db.commit()       # ← NECESARIO
+        db.refresh(ing)   # ← ahora sí funciona
+
+        return ing
+
+
+# ---------------------------------------------------------
+#   ELIMINAR INGREDIENTE
+# ---------------------------------------------------------
+def eliminar_ingrediente(id_: int):
+    with get_session() as db:
+        ing = db.query(Ingredientes).filter(Ingredientes.id == id_).first()
+        if not ing:
+            raise ValueError("Ingrediente no encontrado.")
+
+        db.delete(ing)
+        db.commit()       # ← NECESARIO
+
+        return True
+
+
+# ---------------------------------------------------------
+#   SUMAR STOCK POR NOMBRE
+# ---------------------------------------------------------
+def sumar_stock_por_nombre(nombre: str, cantidad: float):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        raise ValueError("Nombre vacío.")
+
+    try:
+        cantidad = float(cantidad)
+    except (ValueError, TypeError):
+        raise ValueError("Cantidad inválida.")
+
+    with get_session() as db:
+
+        ing = db.query(Ingredientes).filter(Ingredientes.nombre == nombre).first()
+
+        if ing:
+            # Sumar stock
+            ing.cantidad += cantidad
+            db.commit()      
+            db.refresh(ing)
+            return ing
+
+        # Crear nuevo ingrediente si no existe
+        nuevo = Ingredientes(nombre=nombre, cantidad=cantidad)
+        db.add(nuevo)
+        db.commit()           
+        db.refresh(nuevo)
+        return nuevo
