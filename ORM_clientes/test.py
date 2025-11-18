@@ -1,10 +1,9 @@
+# test.py (actualizado para usar el nuevo pedido_crud)
 from sqlalchemy import inspect
 from database import Base, Engine, session
 from models import Cliente, Ingredientes, Menus, Pedido
+from crud.pedido_crud import crear_pedido, agregar_menu_a_pedido
 import os
-
-# NOTA: AL EJECUTAR ESTE COMANDO TODOS LOS PARAMETROS DEL DATABASE SE RESETEAN, USAR CON PRECAUSION
-
 
 def test_completo():
     print("🚀 INICIANDO TEST COMPLETO - CREACIÓN BD + DATOS + PRUEBAS")
@@ -36,6 +35,7 @@ def test_completo():
     cliente2 = Cliente(nombre="Carlos López", email="carlos@gmail.com") 
     cliente3 = Cliente(nombre="María Torres", email="maria000@gmail.com")
     session.add_all([cliente1, cliente2, cliente3])
+    session.commit()
     
     # Crear ingredientes
     ingredientes = [
@@ -50,9 +50,9 @@ def test_completo():
     session.add_all(ingredientes)
     
     # Crear menús
-    hamburguesa = Menus(nombre="Hamburguesa Clásica")
-    hamburguesa_especial = Menus(nombre="Hamburguesa Especial")
-    sandwich = Menus(nombre="Sandwich Vegetariano")
+    hamburguesa = Menus(nombre="Hamburguesa Clásica", descripcion="Deliciosa hamburguesa con carne, queso y vegetales", precio=6500)
+    hamburguesa_especial = Menus(nombre="Hamburguesa Especial", descripcion="Hamburguesa premium con todos los ingredientes", precio=8500)
+    sandwich = Menus(nombre="Sandwich Vegetariano", descripcion="Sandwich saludable con vegetales frescos", precio=4500)
     session.add_all([hamburguesa, hamburguesa_especial, sandwich])
     
     session.commit()
@@ -78,19 +78,35 @@ def test_completo():
     session.commit()
     print("✅ Relaciones menús-ingredientes establecidas")
     
-    # 4. CREAR PEDIDOS COMPLETOS
+    # 4. CREAR PEDIDOS COMPLETOS USANDO EL CRUD
     print("\n4. 🛒 CREANDO PEDIDOS COMPLETOS...")
     
-    pedido1 = Pedido(nombre="Pedido de Ana", cantidad=2, precio=6500, cliente_id=cliente1.id)
-    pedido2 = Pedido(nombre="Pedido de Carlos", cantidad=1, precio=3200, cliente_id=cliente2.id)
-    
-    # Asignar menús a pedidos
-    pedido1.menus.extend([hamburguesa, hamburguesa_especial])
-    pedido2.menus.extend([sandwich])
-    
-    session.add_all([pedido1, pedido2])
-    session.commit()
-    print("✅ Pedidos creados con relaciones")
+    try:
+        # Crear pedidos usando el CRUD
+        pedido1 = crear_pedido(
+            descripcion="Pedido de Ana - Hamburguesas", 
+            total=15000, 
+            cliente_id=cliente1.id,
+            estado="completado"
+        )
+        
+        pedido2 = crear_pedido(
+            descripcion="Pedido de Carlos - Sandwich", 
+            total=4500, 
+            cliente_id=cliente2.id,
+            estado="completado"
+        )
+        
+        # Agregar menús a los pedidos usando el CRUD
+        agregar_menu_a_pedido(pedido1.id, hamburguesa.id)
+        agregar_menu_a_pedido(pedido1.id, hamburguesa_especial.id)
+        agregar_menu_a_pedido(pedido2.id, sandwich.id)
+        
+        print("✅ Pedidos creados con relaciones usando CRUD")
+        
+    except Exception as e:
+        print(f"❌ Error creando pedidos: {e}")
+        return
     
     # 5. VERIFICAR TODO FUNCIONA
     print("\n5. ✅ VERIFICANDO INTEGRACIÓN COMPLETA...")
@@ -99,25 +115,25 @@ def test_completo():
     print(f"\n👥 CLIENTES Y SUS PEDIDOS:")
     clientes = session.query(Cliente).all()
     for cliente in clientes:
-        print(f"   {cliente.nombre}: {len(cliente.pedidos)} pedido(s)")
+        print(f"   {cliente.nombre} ({cliente.email}): {len(cliente.pedidos)} pedido(s)")
         for pedido in cliente.pedidos:
-            print(f"      📦 {pedido.nombre} - ${pedido.precio}")
+            print(f"      📦 {pedido.descripcion} - ${pedido.total} - {pedido.estado}")
             for menu in pedido.menus:
-                print(f"         🍽️  {menu.nombre}")
+                print(f"         🍽️  {menu.nombre} - ${menu.precio}")
     
     # Verificar menús y sus ingredientes
     print(f"\n🍽️  MENÚS Y INGREDIENTES:")
     menus = session.query(Menus).all()
     for menu in menus:
-        print(f"   {menu.nombre}: {len(menu.ingredientes)} ingredientes")
+        print(f"   {menu.nombre} (${menu.precio}): {len(menu.ingredientes)} ingredientes")
         for ing in menu.ingredientes:
-            print(f"      🥬 {ing.nombre} (stock: {ing.cantidad})")
+            print(f"      🥬 {ing.nombre} (stock: {ing.cantidad} {ing.unidad})")
     
     # Verificar stock total
     print(f"\n📦 INVENTARIO ACTUAL:")
     ingredientes = session.query(Ingredientes).all()
     for ing in ingredientes:
-        print(f"   {ing.nombre}: {ing.cantidad} unidades")
+        print(f"   {ing.nombre}: {ing.cantidad} {ing.unidad}")
     
     # 6. VERIFICAR ARCHIVO FÍSICO
     print(f"\n6. 📁 VERIFICANDO ARCHIVO FÍSICO...")
@@ -125,8 +141,6 @@ def test_completo():
         stats = os.stat('PixelFood.db')
         print(f"✅ PixelFood.db existe")
         print(f"   📏 Tamaño: {stats.st_size} bytes")
-        print(f"   📅 Creado: {stats.st_ctime}")
-        print(f"   ✏️  Modificado: {stats.st_mtime}")
     else:
         print("❌ PixelFood.db no existe")
     
